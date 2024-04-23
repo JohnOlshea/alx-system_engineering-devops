@@ -1,25 +1,24 @@
-#!/usr/bin/env bash
-# Customizing a 404-error_page
+# Setup New Ubuntu server with nginx
 
-# Updating Packages before performing installations
-sudo apt-get update
-sudo apt-get install -y nginx
+exec { 'update system':
+        command => '/usr/bin/apt-get update',
+}
 
-# Creating an index.html page
-echo "Hello World!" | sudo tee /var/www/html/index.html
+package { 'nginx':
+	ensure => 'installed',
+	require => Exec['update system']
+}
 
-# Performing a "moved permanently redirection" (301)
-new_string="server_name _;\n\trewrite ^\/redirect_me https:\/\/github.com\/besthor permanent;"
-sudo sed -i "s/server_name _;/$new_string/" /etc/nginx/sites-enabled/default
+file {'/var/www/html/index.html':
+	content => 'Hello World!'
+}
 
-# Creating a 404 Custom error page
-echo "Ceci n'est pas une page" | sudo tee /var/www/html/404.html
-new_string="listen 80 default_server;\n\terror_page 404 \/404.html;\n\tlocation = \/404.html {\n\t\troot \/var\/www\/html;\n\t\tinternal;\n\t}"
+exec {'redirect_me':
+	command => 'sed -i "24i\	rewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;" /etc/nginx/sites-available/default',
+	provider => 'shell'
+}
 
-sudo sed -i "s/listen 80 default_server;/$new_string/" /etc/nginx/sites-enabled/default
-
-# Testing configurations for syntax errors
-sudo nginx -t
-
-# restart nginx after implementing changes
-sudo service nginx restart
+service {'nginx':
+	ensure => running,
+	require => Package['nginx']
+}
