@@ -1,40 +1,25 @@
 #!/usr/bin/env bash
-# Configure server using puppet
+# Customizing a 404-error_page
 
-# defines a Puppet class called nginx_server that 
-#  encapsulates the configuration for the Nginx server.
-class nginx_server {
-  package { 'nginx':
-    ensure => installed,
-  }
+# Updating Packages before performing installations
+sudo apt-get update
+sudo apt-get install -y nginx
 
-#  manages the Nginx service.
-  service { 'nginx':
-    ensure => running,
-    enable => true,
-    require => Package['nginx'],
-  }
-# manages the Nginx configuration file located at /etc/nginx/sites-available/default.
-  file { '/etc/nginx/sites-available/default':
-    ensure  => present,
-    content => "
-      server {
-        listen      80 default_server;
-        listen      [::]:80 default_server;
-        root        /var/www/html;
-        index       index.html index.htm;
+# Creating an index.html page
+echo "Hello World!" | sudo tee /var/www/html/index.html
 
-        location / {
-          return 200 'Hello World!';
-        }
+# Performing a "moved permanently redirection" (301)
+new_string="server_name _;\n\trewrite ^\/redirect_me https:\/\/github.com\/besthor permanent;"
+sudo sed -i "s/server_name _;/$new_string/" /etc/nginx/sites-enabled/default
 
-        location /redirect_me {
-          return 301 http://cuberule.com/;
-        }
-      }
-    ",
-    notify => Service['nginx'],
-  }
-}
-#  includes the nginx_server class, ensuring that it gets applied.
-include nginx_server
+# Creating a 404 Custom error page
+echo "Ceci n'est pas une page" | sudo tee /var/www/html/404.html
+new_string="listen 80 default_server;\n\terror_page 404 \/404.html;\n\tlocation = \/404.html {\n\t\troot \/var\/www\/html;\n\t\tinternal;\n\t}"
+
+sudo sed -i "s/listen 80 default_server;/$new_string/" /etc/nginx/sites-enabled/default
+
+# Testing configurations for syntax errors
+sudo nginx -t
+
+# restart nginx after implementing changes
+sudo service nginx restart
