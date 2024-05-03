@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Shows information about subdomains.
+hows information about subdomains.
 
 domain_information() {
     local domain="$1"
